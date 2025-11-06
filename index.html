@@ -115,16 +115,32 @@
     cursor: pointer;
   }
 
-  #whatsappShare {
+  .share-buttons {
     position: fixed;
     bottom: 20px;
     right: 20px;
+    display: flex;
+    gap: 15px;
+  }
+
+  .share-button {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: url('https://i.postimg.cc/NFPMxQQb/IMG-1313.png') no-repeat center center;
     background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     cursor: pointer;
+  }
+
+  #whatsappShare {
+    background-image: url('https://i.postimg.cc/NFPMxQQb/IMG-1313.png');
+  }
+
+  #emailShare {
+    background-image: url('https://cdn-icons-png.flaticon.com/512/732/732200.png');
+    background-color: white;
+    border: 2px solid #2b2d42;
   }
 </style>
 </head>
@@ -140,7 +156,7 @@
   <h3>How to Use</h3>
   <p>Type in the card you are looking for into the PriceCharting website.<br>
   Once you have the correct card and price, enter the details in the rows below.<br>
-  This will give you a total amount, and if you wish to share this information, please use the WhatsApp logo.</p>
+  This will give you a total amount, and if you wish to share this information, please use the WhatsApp or Email button below.</p>
   <button onclick="document.getElementById('howToUsePopup').style.display='none'">Close</button>
 </div>
 
@@ -174,7 +190,8 @@
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="3">Total:</td>
+        <td colspan="2">Totals:</td>
+        <td id="totalValue">0.00</td>
         <td id="totalTrade">0.00</td>
         <td id="totalCash">0.00</td>
       </tr>
@@ -184,7 +201,10 @@
 
 <button id="addRowBtn">Add Row</button>
 
-<div id="whatsappShare" title="Share on WhatsApp"></div>
+<div class="share-buttons">
+  <div id="whatsappShare" class="share-button" title="Share on WhatsApp"></div>
+  <div id="emailShare" class="share-button" title="Share by Email"></div>
+</div>
 
 <script>
   document.getElementById('howToUseBtn').onclick = () => {
@@ -217,12 +237,17 @@
   }
 
   function updateTotals() {
+    let totalValue = 0;
     let totalTrade = 0;
     let totalCash = 0;
+
     document.querySelectorAll('#tableBody tr').forEach(row => {
+      totalValue += parseFloat(row.querySelector('.value').value) || 0;
       totalTrade += parseFloat(row.querySelector('.trade').textContent) || 0;
       totalCash += parseFloat(row.querySelector('.cash').textContent) || 0;
     });
+
+    document.getElementById('totalValue').textContent = totalValue.toFixed(2);
     document.getElementById('totalTrade').textContent = totalTrade.toFixed(2);
     document.getElementById('totalCash').textContent = totalCash.toFixed(2);
   }
@@ -245,18 +270,40 @@
     document.getElementById('tableBody').appendChild(newRow);
   };
 
-  document.getElementById('whatsappShare').onclick = () => {
-    let message = "Journey Together TCG Trade Values:\n";
+  function getMessageText() {
+    let message = "Please see below table of card values from Newton’s Collectables powered by tradeintcg.com\n\n";
+    message += "Card Name | Trade-In | Cash Trade-In\n";
+    message += "------------------------------------\n";
     document.querySelectorAll('#tableBody tr').forEach(row => {
       const cardName = row.querySelector('input[type=text]').value;
       const tradeValue = row.querySelector('.trade').textContent;
       const cashValue = row.querySelector('.cash').textContent;
       if (cardName) {
-        message += `${cardName} - Trade-In: £${tradeValue}, Cash: £${cashValue}\n`;
+        message += `${cardName} - £${tradeValue} trade / £${cashValue} cash\n`;
       }
     });
-    message += `\nTotal Trade: £${document.getElementById('totalTrade').textContent}\nTotal Cash: £${document.getElementById('totalCash').textContent}`;
+    message += `\nTotal Value: £${document.getElementById('totalValue').textContent}\nTotal Trade: £${document.getElementById('totalTrade').textContent}\nTotal Cash: £${document.getElementById('totalCash').textContent}`;
+    return message;
+  }
+
+  document.getElementById('whatsappShare').onclick = () => {
+    const message = getMessageText();
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  document.getElementById('emailShare').onclick = () => {
+    const subject = "Card Trade Values from Newton’s Collectables";
+    const body = getMessageText();
+    const gmailURL = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const outlookURL = `https://outlook.live.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    if (navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("Android")) {
+      window.open(gmailURL, "_blank");
+    } else if (navigator.userAgent.includes("iPhone") || navigator.userAgent.includes("iPad")) {
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    } else {
+      window.open(outlookURL, "_blank");
+    }
   };
 </script>
 
